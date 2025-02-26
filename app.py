@@ -3,7 +3,6 @@ import tensorflow as tf
 import numpy as np
 import cv2
 from PIL import Image
-import time
 import os
 import pandas as pd
 
@@ -13,7 +12,6 @@ CSV_FILE = "training_data/Classes_alle.csv"
 IMG_SIZE = (224, 224)
 
 # 📌 Lade Klassen aus CSV
-
 def load_labels(csv_path):
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
@@ -53,26 +51,19 @@ def classify_image(image):
     return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 # 🌍 Streamlit-App
-st.title("📹 Live-Objekterkennung mit MobileNetV2")
-st.write("Starte die Kamera und erkenne Objekte in Echtzeit!")
+st.title("📸 Objekterkennung mit Webcam im Browser")
+st.write("Nutze deine Webcam, um Objekte direkt im Browser zu erkennen!")
 
-# 📌 Kamera aktivieren
-video = cv2.VideoCapture(0)
-frame_placeholder = st.empty()
+# 📌 Webcam-Unterstützung
+camera_image = st.camera_input("Mache ein Bild mit deiner Webcam")
 
-if st.button("🎥 Starte Livestream"):
-    while True:
-        ret, frame = video.read()
-        if not ret:
-            st.error("❌ Fehler: Kein Kamerabild verfügbar!")
-            break
-        
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_image = Image.fromarray(frame_rgb)
+if camera_image is not None:
+    image = Image.open(camera_image)
+    st.image(image, caption="Aufgenommenes Bild", use_column_width=True)
 
-        labels, output_image = classify_image(pil_image)
+    # 🔥 Bildklassifikation durchführen
+    labels, output_image = classify_image(image)
 
-        frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
-        time.sleep(0.1)  # 🔄 Simuliert Live-Update
-
-video.release()
+    st.write("🔍 Vorhersagen:")
+    st.write(labels)
+    st.image(output_image, caption="Bild mit Vorhersage", use_column_width=True)
