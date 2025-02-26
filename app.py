@@ -5,6 +5,7 @@ import cv2
 from PIL import Image
 import os
 import pandas as pd
+import time
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
@@ -39,7 +40,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"Unbekannt ({i})")  # 🔄 Jetzt mit Klassennamen aus CSV
+        class_name = LABELS.get(i, f"Klasse {i}")  # 🔄 Jetzt mit echten Klassennamen
         confidence = float(predictions[i])
         label_text = f"{class_name}: {confidence:.2%}"
         results.append(label_text)
@@ -51,19 +52,18 @@ def classify_image(image):
     return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 # 🌍 Streamlit-App
-st.title("📸 Objekterkennung mit Webcam im Browser")
-st.write("Nutze deine Webcam, um Objekte direkt im Browser zu erkennen!")
+st.title("📸 Fast-Live Objekterkennung mit Webcam")
+st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
 
 # 📌 Webcam-Unterstützung
-camera_image = st.camera_input("Mache ein Bild mit deiner Webcam")
+frame_placeholder = st.empty()
 
-if camera_image is not None:
-    image = Image.open(camera_image)
-    st.image(image, caption="Aufgenommenes Bild", use_column_width=True)
+if st.button("🎥 Starte Fast-Live Webcam-Erkennung"):
+    while True:
+        camera_image = st.camera_input("Webcam aufnehmen und analysieren")
+        if camera_image is not None:
+            image = Image.open(camera_image)
+            labels, output_image = classify_image(image)
 
-    # 🔥 Bildklassifikation durchführen
-    labels, output_image = classify_image(image)
-
-    st.write("🔍 Vorhersagen:")
-    st.write(labels)
-    st.image(output_image, caption="Bild mit Vorhersage", use_column_width=True)
+            frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
+            time.sleep(0.5)  # 🔄 Fast-Live Effekt
