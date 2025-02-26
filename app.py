@@ -50,16 +50,16 @@ def classify_image(image):
 
     return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
-# 🌍 Streamlit Web-App UI
-st.title("🎯 MobileNetV2 Objekterkennung")
-st.write("Lade ein Bild hoch oder nutze die Kamera!")
+# 🌍 Streamlit Webcam-Unterstützung
+st.write("📸 Nutze deine Webcam für die Objekterkennung:")
+camera_image = st.camera_input("Mache ein Bild mit deiner Kamera")
 
-uploaded_file = st.file_uploader("Wähle ein Bild...", type=["jpg", "png", "jpeg"])
+if camera_image is not None:
+    # Bild als PIL-Image öffnen
+    image = Image.open(camera_image)
+    st.image(image, caption="Aufgenommenes Bild", use_column_width=True)
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Hochgeladenes Bild", use_column_width=True)
-
+    # 🔥 Bildklassifikation durchführen
     labels, output_image = classify_image(image)
 
     st.write("🔍 Vorhersagen:")
