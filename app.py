@@ -1,10 +1,11 @@
-import os
 import streamlit as st
 import tensorflow as tf
 import numpy as np
-import pandas as pd
 import cv2
 from PIL import Image
+import time
+import os
+import pandas as pd
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
@@ -12,6 +13,7 @@ CSV_FILE = "training_data/Classes_alle.csv"
 IMG_SIZE = (224, 224)
 
 # 📌 Lade Klassen aus CSV
+
 def load_labels(csv_path):
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
@@ -23,7 +25,7 @@ model = tf.keras.models.load_model(MODEL_PATH)
 
 # 📌 Bild vorbereiten
 def preprocess_image(image):
-    image = image.resize(IMG_SIZE)  # Streamlit nutzt PIL, daher kein cv2.resize nötig
+    image = image.resize(IMG_SIZE)
     image = np.array(image) / 255.0
     return np.expand_dims(image, axis=0)
 
@@ -39,7 +41,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"Unbekannt ({i})")
+        class_name = LABELS.get(i, f"Unbekannt ({i})")  # 🔄 Jetzt mit Klassennamen aus CSV
         confidence = float(predictions[i])
         label_text = f"{class_name}: {confidence:.2%}"
         results.append(label_text)
@@ -50,39 +52,27 @@ def classify_image(image):
 
     return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
-# 🌍 Streamlit Webcam-Unterstützung
-st.write("📸 Nutze deine Webcam für die Objekterkennung:")
-camera_image = st.camera_input("Mache ein Bild mit deiner Kamera")
+# 🌍 Streamlit-App
+st.title("📹 Live-Objekterkennung mit MobileNetV2")
+st.write("Starte die Kamera und erkenne Objekte in Echtzeit!")
 
-if camera_image is not None:
-    # Bild als PIL-Image öffnen
-    image = Image.open(camera_image)
-    st.image(image, caption="Aufgenommenes Bild", use_column_width=True)
+# 📌 Kamera aktivieren
+video = cv2.VideoCapture(0)
+frame_placeholder = st.empty()
 
-    # 🔥 Bildklassifikation durchführen
-    labels, output_image = classify_image(image)
+if st.button("🎥 Starte Livestream"):
+    while True:
+        ret, frame = video.read()
+        if not ret:
+            st.error("❌ Fehler: Kein Kamerabild verfügbar!")
+            break
+        
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(frame_rgb)
 
-    st.write("🔍 Vorhersagen:")
-    st.write(labels)
-    st.image(output_image, caption="Bild mit Vorhersage", use_column_width=True)
+        labels, output_image = classify_image(pil_image)
 
-# ✅ Kamera-Unterstützung (Falls nötig)
-if st.button("📸 Starte Kamera"):
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        st.error("❌ Fehler: Kamera nicht verfügbar!")
-    else:
-        st.write("🎥 Kamera läuft...")
+        frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
+        time.sleep(0.1)  # 🔄 Simuliert Live-Update
 
-        ret, frame = cap.read()
-        if ret:
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(frame_rgb)
-            st.image(pil_image, caption="Live-Kamera", use_column_width=True)
-
-            labels, output_image = classify_image(pil_image)
-            st.write("🔍 Vorhersagen:")
-            st.write(labels)
-            st.image(output_image, caption="Kamera-Erkennung", use_column_width=True)
-
-        cap.release()
+video.release()
