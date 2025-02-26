@@ -40,7 +40,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"Klasse {i}")  # 🔄 Jetzt mit echten Klassennamen
+        class_name = LABELS.get(i, "Unbekannt")  # 🔄 Jetzt mit echten Klassennamen
         confidence = float(predictions[i])
         label_text = f"{class_name}: {confidence:.2%}"
         results.append(label_text)
@@ -52,20 +52,28 @@ def classify_image(image):
     return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 # 🌍 Streamlit-App
-st.title("📸 Fast-Live Objekterkennung mit Webcam")
+st.title("📸 Live-Objekterkennung mit Webcam")
 st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
 
 # 📌 Webcam-Unterstützung
-camera_image = st.camera_input("📷 Mache ein Bild mit der Webcam")
+frame_placeholder = st.empty()
 
-if camera_image is not None:
-    image = Image.open(camera_image)
-    st.image(image, caption="📷 Aufgenommenes Bild", use_column_width=True)
+if st.button("🎥 Starte Live-Streaming Webcam-Erkennung"):
+    video_capture = cv2.VideoCapture(0)
+    if not video_capture.isOpened():
+        st.error("❌ Fehler: Kamera nicht verfügbar!")
+    else:
+        while True:
+            ret, frame = video_capture.read()
+            if not ret:
+                st.error("❌ Fehler: Kein Kamerabild verfügbar!")
+                break
 
-    frame_placeholder = st.empty()
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(frame_rgb)
+            labels, output_image = classify_image(pil_image)
 
-    if st.button("🎥 Starte Fast-Live Verarbeitung"):
-        for _ in range(20):  # 🔄 Simuliert Live-Update für 20 Durchläufe
-            labels, output_image = classify_image(image)
             frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
-            time.sleep(0.5)  # 🔄 Aktualisierung alle 0,5 Sekunden
+            time.sleep(0.1)  # 🔄 Simuliert kontinuierliches Live-Update
+
+    video_capture.release()
