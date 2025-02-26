@@ -56,14 +56,16 @@ st.title("📸 Fast-Live Objekterkennung mit Webcam")
 st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
 
 # 📌 Webcam-Unterstützung
-frame_placeholder = st.empty()
+camera_image = st.camera_input("📷 Mache ein Bild mit der Webcam")
 
-if st.button("🎥 Starte Fast-Live Webcam-Erkennung"):
-    while True:
-        camera_image = st.camera_input("Webcam aufnehmen und analysieren")
-        if camera_image is not None:
-            image = Image.open(camera_image)
+if camera_image is not None:
+    image = Image.open(camera_image)
+    st.image(image, caption="📷 Aufgenommenes Bild", use_column_width=True)
+
+    frame_placeholder = st.empty()
+
+    if st.button("🎥 Starte Fast-Live Verarbeitung"):
+        for _ in range(20):  # 🔄 Simuliert Live-Update für 20 Durchläufe
             labels, output_image = classify_image(image)
-
             frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
-            time.sleep(0.5)  # 🔄 Fast-Live Effekt
+            time.sleep(0.5)  # 🔄 Aktualisierung alle 0,5 Sekunden
