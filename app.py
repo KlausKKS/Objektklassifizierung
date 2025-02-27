@@ -15,7 +15,7 @@ IMG_SIZE = (224, 224)
 def load_labels(csv_path):
     if os.path.exists(csv_path):
         df = pd.read_csv(csv_path)
-        return {int(row["label_id"]): row["class_name"] for _, row in df.iterrows()}
+        return {row["label_id"]: row["class_name"] for _, row in df.iterrows()}
     return {}
 
 LABELS = load_labels(CSV_FILE)
@@ -39,7 +39,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"{i} Unbekannt")  # 🔄 Holt den richtigen Namen aus der CSV
+        class_name = LABELS.get(str(i), "Unbekannt")  # 🔄 Korrekte Abfrage mit String-Index
         confidence = float(predictions[i])
         label_text = f"{i} {class_name}: {confidence:.2%}"  # Nummer + Name der Klasse
         results.append(label_text)
