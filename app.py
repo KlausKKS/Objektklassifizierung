@@ -8,7 +8,7 @@ import pandas as pd
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
-CSV_FILE = "training_data/Classes_alle.csv"
+CSV_FILE = "Anaconda_projects/Objektklassifizierung Mobile Net/training_data/Classes_alle.csv"
 IMG_SIZE = (224, 224)
 
 # 📌 Lade Klassen aus CSV
