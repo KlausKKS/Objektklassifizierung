@@ -1,7 +1,8 @@
 streamlit
+flask
 tensorflow
 numpy
 pandas
-opencv-python-headless
+opencv-python
 pillow
 requests
