@@ -39,7 +39,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(str(i), "Unbekannt")  # 🔄 Korrekte Abfrage mit String-Index
+        class_name = [LABELS.get(i, "Unbekannt"), predictions [i] for i in top_2]  # 🔄 Korrekte Abfrage mit String-Index
         confidence = float(predictions[i])
         label_text = f"{i} {class_name}: {confidence:.2%}"  # Nummer + Name der Klasse
         results.append(label_text)
