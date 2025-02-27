@@ -39,9 +39,9 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"Klasse {i}")  # 🔄 Jetzt mit echten Klassennamen
+        class_name = LABELS.get(i, "Unbekannt")
         confidence = float(predictions[i])
-        label_text = f"{class_name}: {confidence:.2%}"
+        label_text = f"{i} {class_name}: {confidence:.2%}"  # 🔄 Jetzt mit Klassennummer und Namen
         results.append(label_text)
 
         # 🔥 Text ins Bild zeichnen
