@@ -1,10 +1,12 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
 import cv2
-from PIL import Image
-import os
+import numpy as np
+import tensorflow as tf
 import pandas as pd
+import os
+import subprocess
+import time
+from PIL import Image
 import requests
 from io import BytesIO
 
@@ -45,24 +47,37 @@ def classify_image(image):
 
 # 🌍 Streamlit-App
 st.title("📹 Echtzeit-Objekterkennung mit Flask-Livestream")
-st.write("Starte den Flask-Server und verbinde die App.")
+st.write("Starte den Flask-Server, um den Livestream zu empfangen.")
+
+# 📌 Flask-Server automatisch starten
+FLASK_RUNNING = False
+FLASK_COMMAND = ["python", "flask_livestream.py"]
+
+if st.button("🚀 Flask-Server starten"):
+    if not FLASK_RUNNING:
+        subprocess.Popen(FLASK_COMMAND)
+        st.write("📡 Flask-Server wird gestartet... Warte 5 Sekunden.")
+        time.sleep(5)  # Wartezeit, damit Flask startet
+        FLASK_RUNNING = True
+    else:
+        st.write("✅ Flask-Server läuft bereits.")
 
 # 📌 Livestream von Flask abrufen
-FLASK_URL = "http://localhost:5000/video"
+stream_url = "http://localhost:5000/video"
 
 if st.button("🎥 Starte Livestream"):
-    st.write("📡 Verbindung zum Livestream wird aufgebaut...")
+    st.write("📡 Verbinde mit dem Livestream...")
     frame_placeholder = st.empty()
 
     while True:
         try:
-            response = requests.get(FLASK_URL, stream=True)
+            response = requests.get(stream_url, stream=True)
             if response.status_code == 200:
                 image = Image.open(BytesIO(response.content))
                 labels, output_image = classify_image(image)
                 frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
             else:
-                st.error("❌ Kein Bild empfangen. Prüfe den Flask-Server!")
+                st.error("❌ Kein Bild empfangen, prüfe den Flask-Server!")
         except Exception as e:
             st.error(f"Fehler beim Abrufen des Livestreams: {e}")
             break
