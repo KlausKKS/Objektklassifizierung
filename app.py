@@ -1,11 +1,12 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
 import cv2
-from PIL import Image
-import os
+import numpy as np
+import tensorflow as tf
 import pandas as pd
-import time
+import os
+from PIL import Image
+import requests
+from io import BytesIO
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
@@ -35,45 +36,31 @@ def classify_image(image):
     top_2 = np.argsort(predictions)[-2:][::-1]
 
     results = []
-    frame = np.array(image)
-    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
-    y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, "Unbekannt")  # 🔄 Jetzt mit echten Klassennamen
+        class_name = LABELS.get(i, "Unbekannt")
         confidence = float(predictions[i])
-        label_text = f"{class_name}: {confidence:.2%}"
-        results.append(label_text)
+        results.append(f"{class_name}: {confidence:.2%}")
 
-        # 🔥 Text ins Bild zeichnen
-        cv2.putText(frame_bgr, label_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3, cv2.LINE_AA)
-        y_offset += 50  
-
-    return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+    return "\n".join(results), image
 
 # 🌍 Streamlit-App
-st.title("📸 Live-Objekterkennung mit Webcam")
-st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
+st.title("📹 Echtzeit-Objekterkennung mit Flask-Livestream")
+st.write("Starte den Flask-Server, um den Livestream zu empfangen.")
 
-# 📌 Webcam-Unterstützung
-frame_placeholder = st.empty()
+# 📌 Livestream von Flask abrufen
+stream_url = "http://localhost:5000/video"
 
-if st.button("🎥 Starte Live-Streaming Webcam-Erkennung"):
-    video_capture = cv2.VideoCapture(0)
-    if not video_capture.isOpened():
-        st.error("❌ Fehler: Kamera nicht verfügbar!")
-    else:
-        while True:
-            ret, frame = video_capture.read()
-            if not ret:
-                st.error("❌ Fehler: Kein Kamerabild verfügbar!")
-                break
-
-            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(frame_rgb)
-            labels, output_image = classify_image(pil_image)
-
-            frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
-            time.sleep(0.1)  # 🔄 Simuliert kontinuierliches Live-Update
-
-    video_capture.release()
+if st.button("🎥 Starte Livestream"):
+    st.write("📡 Verbinde mit dem Livestream...")
+    while True:
+        try:
+            response = requests.get(stream_url, stream=True)
+            if response.status_code == 200:
+                image = Image.open(BytesIO(response.content))
+                labels, output_image = classify_image(image)
+                st.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
+            else:
+                st.error("❌ Kein Bild empfangen, prüfe den Flask-Server!")
+        except Exception as e:
+            st.error(f"Fehler beim Abrufen des Livestreams: {e}")
+            break
