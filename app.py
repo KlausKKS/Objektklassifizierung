@@ -35,7 +35,7 @@ def classify_image(image):
 
     results = []
     for i in top_2:
-        class_name = LABELS.get(str(i), f'{LABELS.get(str(i), "Unbekannt")}')
+        class_name = LABELS.get(i), f'{LABELS.get(i), "Unbekannt")}')
         confidence = float(predictions[i])
         results.append(f"{i} {class_name}: {confidence:.2%}")
     
