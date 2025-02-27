@@ -1,14 +1,10 @@
 import streamlit as st
-import cv2
-import numpy as np
 import tensorflow as tf
-import pandas as pd
-import os
-import subprocess
-import time
+import numpy as np
+import cv2
 from PIL import Image
-import requests
-from io import BytesIO
+import os
+import pandas as pd
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
@@ -38,46 +34,35 @@ def classify_image(image):
     top_2 = np.argsort(predictions)[-2:][::-1]
 
     results = []
-    for i in top_2:
-        class_name = LABELS.get(i, "Unbekannt")
-        confidence = float(predictions[i])
-        results.append(f"{class_name}: {confidence:.2%}")
+    frame = np.array(image)
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-    return "\n".join(results), image
+    y_offset = 50
+    for i in top_2:
+        class_name = LABELS.get(i, "Unbekannt")  # 🔄 Jetzt mit echten Klassennamen
+        confidence = float(predictions[i])
+        label_text = f"{class_name}: {confidence:.2%}"
+        results.append(label_text)
+
+        # 🔥 Text ins Bild zeichnen
+        cv2.putText(frame_bgr, label_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3, cv2.LINE_AA)
+        y_offset += 50  
+
+    return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 # 🌍 Streamlit-App
-st.title("📹 Echtzeit-Objekterkennung mit Flask-Livestream")
-st.write("Starte den Flask-Server, um den Livestream zu empfangen.")
+st.title("📸 Objekterkennung mit Webcam")
+st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
 
-# 📌 Flask-Server automatisch starten
-FLASK_RUNNING = False
-FLASK_COMMAND = ["python", "flask_livestream.py"]
+# 📌 Webcam-Unterstützung
+camera_image = st.camera_input("📷 Mache ein Bild mit der Webcam")
 
-if st.button("🚀 Flask-Server starten"):
-    if not FLASK_RUNNING:
-        subprocess.Popen(FLASK_COMMAND)
-        st.write("📡 Flask-Server wird gestartet... Warte 5 Sekunden.")
-        time.sleep(5)  # Wartezeit, damit Flask startet
-        FLASK_RUNNING = True
-    else:
-        st.write("✅ Flask-Server läuft bereits.")
+if camera_image is not None:
+    image = Image.open(camera_image)
+    st.image(image, caption="📷 Aufgenommenes Bild", use_column_width=True)
 
-# 📌 Livestream von Flask abrufen
-stream_url = "http://localhost:5000/video"
+    labels, output_image = classify_image(image)
 
-if st.button("🎥 Starte Livestream"):
-    st.write("📡 Verbinde mit dem Livestream...")
-    frame_placeholder = st.empty()
-
-    while True:
-        try:
-            response = requests.get(stream_url, stream=True)
-            if response.status_code == 200:
-                image = Image.open(BytesIO(response.content))
-                labels, output_image = classify_image(image)
-                frame_placeholder.image(output_image, caption=f"🔍 {labels}", use_column_width=True)
-            else:
-                st.error("❌ Kein Bild empfangen, prüfe den Flask-Server!")
-        except Exception as e:
-            st.error(f"Fehler beim Abrufen des Livestreams: {e}")
-            break
+    st.write("🔍 Vorhersagen:")
+    st.write(labels)
+    st.image(output_image, caption="Bild mit Vorhersage", use_column_width=True)
