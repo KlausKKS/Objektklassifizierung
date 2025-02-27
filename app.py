@@ -8,14 +8,15 @@ import pandas as pd
 
 # 🔥 Modell & Labels laden
 MODEL_PATH = "mobilenet_model.h5"
-CSV_FILE = "Classes_alle.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CSV_FILE = os.path.join(BASE_DIR, "Classes_alle.csv")
 IMG_SIZE = (224, 224)
 
 # 📌 Lade Klassen aus CSV
 def load_labels(csv_path):
     if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path, dtype={"label_id": str})  # label_id als String speichern
-        df["class_name"] = df["class_name"].str.strip()  # Entfernt Leerzeichen
+        df = pd.read_csv(csv_path, dtype={"label_id": str})
+        df["class_name"] = df["class_name"].str.strip()
         return {row["label_id"]: row["class_name"] for _, row in df.iterrows()}
     return {}
 
@@ -35,12 +36,21 @@ def classify_image(image):
     top_2 = np.argsort(predictions)[-2:][::-1]
 
     results = []
+    frame = np.array(image)
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+
+    y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(str(i), f"{i} (Nicht gefunden)")  # Holt den echten Namen aus der CSV
+        class_name = LABELS.get(str(i), f"{i} (Nicht gefunden)")
         confidence = float(predictions[i])
-        results.append(f"{i} {class_name}: {confidence:.2%}")
-    
-    return "\n".join(results)
+        label_text = f"{i} {class_name}: {confidence:.2%}"
+        results.append(label_text)
+        
+        # 🔥 Text ins Bild zeichnen
+        cv2.putText(frame_bgr, label_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3, cv2.LINE_AA)
+        y_offset += 50  
+
+    return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
 
 # 🌍 Streamlit-App
 st.title("📸 Objekterkennung mit Webcam")
@@ -51,9 +61,8 @@ camera_image = st.camera_input("📷 Mache ein Bild mit der Webcam")
 
 if camera_image is not None:
     image = Image.open(camera_image)
-    st.image(image, caption="📷 Aufgenommenes Bild", use_column_width=True)
-
-    labels = classify_image(image)
-
-    st.write("🔍 Vorhersagen:")
+    labels, output_image = classify_image(image)
+    
+    st.image(output_image, caption="📷 Bild mit Desmiderkennung", use_column_width=True)
+    st.write("🔍 Desmiderkennung:")
     st.write(labels)
