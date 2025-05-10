@@ -15,7 +15,7 @@ IMG_SIZE = (224, 224)
 # 📌 Lade Klassen aus CSV
 def load_labels(csv_path):
     if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path, dtype={"label_id": str})
+        df = pd.read_csv(csv_path, sep=";")  # Kein index_col!
         df["class_name"] = df["class_name"].str.strip()
         return {row["label_id"]: row["class_name"] for _, row in df.iterrows()}
     return {}
