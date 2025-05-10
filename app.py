@@ -25,7 +25,6 @@ def load_labels(csv_path):
     return {}
 
 LABELS = load_labels(CSV_FILE)
-st.write("LABELS:", LABELS)
 model = tf.keras.models.load_model(MODEL_PATH)
 
 # 📌 Bild vorbereiten
@@ -36,7 +35,6 @@ def preprocess_image(image):
 
 # 📌 Bildklassifikation
 def classify_image(image):
-    st.write("Top-2 Indices:", top_2)
     img_tensor = preprocess_image(image)
     predictions = model.predict(img_tensor)[0]
     top_2 = np.argsort(predictions)[-2:][::-1]
