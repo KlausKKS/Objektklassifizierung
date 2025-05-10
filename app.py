@@ -15,17 +15,19 @@ IMG_SIZE = (224, 224)
 # 📌 Lade Klassen aus CSV
 def load_labels(csv_path):
     if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path, sep=";")
+        df = pd.read_csv(csv_path, sep=";", encoding="utf-8-sig")
         df.columns = df.columns.str.strip()
-        st.write("📄 CSV-Inhalt Vorschau:", df.head())  # Debug
         if "class_name" not in df.columns or "label_id" not in df.columns:
             raise ValueError("Erwartete Spalten 'label_id' und 'class_name' fehlen.")
-        
         df["class_name"] = df["class_name"].astype(str).str.strip()
-        st.write("🧪 Class Names nach Strip:", df["class_name"].tolist())  # Debug
 
-        return {int(row["label_id"]): row["class_name"] for _, row in df.iterrows()}
-    return {}
+        # 🔍 Nutze STR als Key für sichere Zuordnung
+        labels_dict = {str(row["label_id"]).strip(): row["class_name"] for _, row in df.iterrows()}
+        st.write("✅ LABELS geladen:", list(labels_dict.items())[:5])  # Debug-Vorschau
+        return labels_dict
+    else:
+        st.error(f"CSV-Datei nicht gefunden: {csv_path}")
+        return {}
 
 LABELS = load_labels(CSV_FILE)
 model = tf.keras.models.load_model(MODEL_PATH)
@@ -45,19 +47,22 @@ def classify_image(image):
     results = []
     frame = np.array(image)
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
     y_offset = 50
+
     for i in top_2:
-        class_name = LABELS.get(int(i), f"{i} (Nicht gefunden)")
+        key = str(i)  # 🔐 wichtig: Key als String
+        class_name = LABELS.get(key, f"{i} (Nicht gefunden)")
         confidence = float(predictions[i])
         label_text = f"{i} {class_name}: {confidence:.2%}"
         results.append(label_text)
-        
-        # 🔥 Text ins Bild zeichnen
-        cv2.putText(frame_bgr, label_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 0), 3, cv2.LINE_AA)
-        y_offset += 50  
 
-    return "\n".join(results), Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+        # 🔥 Text ins Bild zeichnen
+        cv2.putText(frame_bgr, label_text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX,
+                    1.2, (0, 255, 0), 3, cv2.LINE_AA)
+        y_offset += 50
+
+    result_img = Image.fromarray(cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB))
+    return "\n".join(results), result_img
 
 # 🌍 Streamlit-App
 st.title("📸 Objekterkennung mit Webcam")
@@ -72,4 +77,4 @@ if camera_image is not None:
     
     st.image(output_image, caption="📷 Bild mit Desmiderkennung", use_column_width=True)
     st.write("🔍 Desmiderkennung:")
-    st.write(labels)
+    st.text(labels)
