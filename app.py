@@ -36,6 +36,7 @@ def preprocess_image(image):
 
 # 📌 Bildklassifikation
 def classify_image(image):
+    st.write("Top-2 Indices:", top_2)
     img_tensor = preprocess_image(image)
     predictions = model.predict(img_tensor)[0]
     top_2 = np.argsort(predictions)[-2:][::-1]
