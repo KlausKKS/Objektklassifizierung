@@ -48,7 +48,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(i, f"{i} (Nicht gefunden)")
+        class_name = LABELS.get(int(i), f"{i} (Nicht gefunden)")
         confidence = float(predictions[i])
         label_text = f"{i} {class_name}: {confidence:.2%}"
         results.append(label_text)
