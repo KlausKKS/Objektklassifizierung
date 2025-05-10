@@ -15,7 +15,11 @@ IMG_SIZE = (224, 224)
 # 📌 Lade Klassen aus CSV
 def load_labels(csv_path):
     if os.path.exists(csv_path):
-        df = pd.read_csv(csv_path, sep=";")  # Kein index_col!
+        df = pd.read_csv(csv_path, sep=";")
+        df.columns = df.columns.str.strip()  # <- entfernt Leerzeichen
+        st.write("CSV-Spalten:", df.columns.tolist())  # zur Debug-Ausgabe
+        if "class_name" not in df.columns or "label_id" not in df.columns:
+            raise ValueError("Erwartete Spalten 'label_id' und 'class_name' wurden nicht gefunden.")
         df["class_name"] = df["class_name"].str.strip()
         return {row["label_id"]: row["class_name"] for _, row in df.iterrows()}
     return {}
