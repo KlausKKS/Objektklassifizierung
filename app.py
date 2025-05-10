@@ -25,7 +25,7 @@ def load_labels(csv_path):
     return {}
 
 LABELS = load_labels(CSV_FILE)
-st.write("Labels:", Labels)
+st.write("LABELS:", LABELS)
 model = tf.keras.models.load_model(MODEL_PATH)
 
 # 📌 Bild vorbereiten
