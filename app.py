@@ -21,7 +21,7 @@ def load_labels(csv_path):
         if "class_name" not in df.columns or "label_id" not in df.columns:
             raise ValueError("Erwartete Spalten 'label_id' und 'class_name' wurden nicht gefunden.")
         df["class_name"] = df["class_name"].str.strip()
-        return {row["label_id"]: row["class_name"] for _, row in df.iterrows()}
+        return {int(row["label_id"]): row["class_name"] for _, row in df.iterrows()}
     return {}
 
 LABELS = load_labels(CSV_FILE)
@@ -45,7 +45,7 @@ def classify_image(image):
 
     y_offset = 50
     for i in top_2:
-        class_name = LABELS.get(str(i), f"{i} (Nicht gefunden)")
+        class_name = LABELS.get(i, f"{i} (Nicht gefunden)")
         confidence = float(predictions[i])
         label_text = f"{i} {class_name}: {confidence:.2%}"
         results.append(label_text)
