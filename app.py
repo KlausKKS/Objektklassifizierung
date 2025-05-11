@@ -23,7 +23,6 @@ def load_labels(csv_path):
 
         # 🔍 Nutze STR als Key für sichere Zuordnung
         labels_dict = {str(row["label_id"]).strip(): row["class_name"] for _, row in df.iterrows()}
-        st.write("✅ LABELS geladen:", list(labels_dict.items())[:5])  # Debug-Vorschau
         return labels_dict
     else:
         st.error(f"CSV-Datei nicht gefunden: {csv_path}")
