@@ -64,7 +64,7 @@ def classify_image(image):
     return "\n".join(results), result_img
 
 # 🌍 Streamlit-App
-st.title("📸 Objekterkennung mit Webcam")
+st.title("📸 Desmiderkennung mit Webcam")
 st.write("Nutze deine Webcam für eine kontinuierliche Erkennung!")
 
 # 📌 Webcam-Unterstützung
