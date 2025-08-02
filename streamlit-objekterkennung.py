@@ -15,8 +15,8 @@ st.set_page_config(layout="wide")
 
 # === Konfiguration ===
 MODEL_PATH = "mobilenet_model.h5"
-CLASSES_CSV = "training_data/Classes_alle.csv"
-RULES_CSV = "training_data/Abmessungen.csv"
+CLASSES_CSV = "Classes_alle.csv"
+RULES_CSV = "Abmessungen.csv"
 IMG_SIZE = (224, 224)
 BILD_SAVE_DIR = "bilder"
 KORREKTUR_DIR = "korrigierte_daten"
