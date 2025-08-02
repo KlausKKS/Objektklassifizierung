@@ -1,6 +1,5 @@
 
 import os
-os.chdir(os.path.dirname(__file__))
 import streamlit as st
 import cv2
 import numpy as np
