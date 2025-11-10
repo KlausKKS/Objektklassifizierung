@@ -1,4 +1,3 @@
-
 import streamlit as st
 import cv2
 import numpy as np
@@ -71,10 +70,24 @@ except Exception:
     except Exception:
         st.sidebar.info("📐 Eingabeform konnte nicht ermittelt werden.")
 
+# === Debug-Block ===
+st.sidebar.markdown("### 🧪 Modell-Debugging")
+st.sidebar.write(f"Modellpfad: {MODEL_PATH}")
+st.sidebar.write(f"Modelltyp laut Rückgabe: {MODEL_TYPE}")
+st.sidebar.write(f"Typ des geladenen Objekts: {type(model)}")
+st.sidebar.write(f"Hat `predict`-Methode? {hasattr(model, 'predict')}")
+if hasattr(model, 'predict'):
+    try:
+        dummy = np.zeros((1, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
+        _ = model.predict(dummy)
+        st.sidebar.write("✔️ Dummy-Vorhersage erfolgreich")
+    except Exception as _e:
+        st.sidebar.error(f"❌ Dummy-Vorhersage fehlgeschlagen: {_e}")
+
 # === Vorverarbeitung ===
 def preprocess_frame(frame):
     if frame is None:
-        raise ValueError("Frame ist None")
+        raise ValueError("Frame is None")
     if len(frame.shape) == 2:
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
     elif frame.shape[2] == 4:
@@ -103,12 +116,12 @@ frame = None
 
 if modus == "Kamera":
     cam_data = st.camera_input("Foto aufnehmen")
-    if cam_data:
+    if cam_data is not None:
         file_bytes = np.asarray(bytearray(cam_data.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
 elif modus == "Datei-Upload":
     upload = st.file_uploader("Bild hochladen", type=["jpg", "jpeg", "png"])
-    if upload:
+    if upload is not None:
         file_bytes = np.asarray(bytearray(upload.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
 
