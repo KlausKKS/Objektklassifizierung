@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import pandas as pd
 import os
+port = int(os.environ.get("PORT", 10000))
+ui.run(host='0.0.0.0', port=port)
 import time
 from tensorflow.keras.models import load_model
 from tensorflow.keras.applications.mobilenet_v3 import preprocess_input
