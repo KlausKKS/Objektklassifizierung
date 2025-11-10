@@ -9,7 +9,7 @@ import os
 import time
 
 # === Setup ===
-MODEL_PATH = "mobilenet_model_v3.keras"
+MODEL_PATH = "mobilenet_model_v3_fixed.keras"
 CLASSES_CSV = "training_data/Classes_alle.csv"
 RULES_CSV = "training_data/Abmessungen.csv"
 
