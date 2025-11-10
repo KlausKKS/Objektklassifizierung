@@ -2,8 +2,19 @@ import streamlit as st
 import cv2
 import numpy as np
 import pandas as pd
+from tensorflow.keras.applications import MobileNetV3Large
 from tensorflow.keras.models import load_model
-from tensorflow.keras.applications.mobilenet_v3 import preprocess_input
+
+@st.cache_resource
+def load_resources():
+    model = load_model("mobilenet_model_v3_fixed.keras", 
+                       compile=False,
+                       custom_objects={"Functional": MobileNetV3Large})
+    df_labels = pd.read_csv("training_data/Classes_alle.csv", sep=";")
+    df_rules = pd.read_csv("training_data/Abmessungen.csv", sep=";")
+    labels = dict(zip(df_labels["label_id"].astype(int), df_labels["class_name"]))
+    rules = {r["klasse"]: r for _, r in df_rules.iterrows()}
+    return model, labels, rules
 import tempfile
 import os
 import time
