@@ -12,7 +12,7 @@ from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Small
 # === Streamlit Setup ===
 st.set_page_config(page_title="Objekterkennung Desmids", layout="wide")
 st.title("🔬 Objekterkennung & Klassifikation")
-st.caption("MobileNetV3 – Top-2-Ergebnisse mit Kamera oder Datei-Upload")
+st.caption("MobileNetV3 – Top-2 Ergebnisse mit Kamera oder Datei-Upload")
 
 # === Pfade ===
 MODEL_PATH = "mobilenet_model_v3_fixed.keras"
@@ -23,10 +23,6 @@ IMG_SIZE = (224, 224)
 # === Modell & Daten laden ===
 @st.cache_resource
 def load_resources():
-    from tensorflow.keras.models import load_model
-    from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Small
-
-    # Sicherstellen, dass MODEL_PATH existiert
     if not os.path.exists(MODEL_PATH):
         st.error(f"❌ Modell-Datei nicht gefunden: {MODEL_PATH}")
         st.stop()
@@ -41,7 +37,8 @@ def load_resources():
             custom_objects={"Functional": MobileNetV3Large}
         )
         model_type = "MobileNetV3Large"
-    except Exception:
+    except Exception as e1:
+        st.warning("⚠️ MobileNetV3Large nicht erkannt – versuche Small...")
         try:
             model = load_model(
                 MODEL_PATH,
@@ -49,33 +46,38 @@ def load_resources():
                 custom_objects={"Functional": MobileNetV3Small}
             )
             model_type = "MobileNetV3Small"
-        except Exception as e:
-            st.error(f"❌ Modell konnte nicht geladen werden: {e}")
+        except Exception as e2:
+            st.error(f"❌ Modell konnte nicht geladen werden: {e2}")
             st.stop()
 
-    # Prüfen, ob wirklich ein Modell geladen wurde
     if not hasattr(model, "predict"):
         st.error("❌ Fehler: Modell besitzt keine 'predict'-Methode.")
         st.stop()
 
-    # Labels und Regeln
     df_labels = pd.read_csv(CLASSES_CSV, sep=";")
     df_rules = pd.read_csv(RULES_CSV, sep=";")
     labels = dict(zip(df_labels["label_id"].astype(int), df_labels["class_name"]))
     rules = {r["klasse"]: r for _, r in df_rules.iterrows()}
 
     return model, labels, rules, model_type
-# Ressourcen laden
+
 model, LABELS, RULES, MODEL_TYPE = load_resources()
 st.sidebar.success(f"✅ Modell geladen: {MODEL_TYPE}")
+try:
+    st.sidebar.info(f"📐 Eingabeform: {model.input_shape}")
+except Exception:
+    try:
+        st.sidebar.info(f"📐 Eingabeform: {model.inputs[0].shape}")
+    except Exception:
+        st.sidebar.info("📐 Eingabeform konnte nicht ermittelt werden.")
 
 # === Vorverarbeitung ===
 def preprocess_frame(frame):
     if frame is None:
         raise ValueError("Frame ist None")
-    if len(frame.shape) == 2:  # Graustufen
+    if len(frame.shape) == 2:
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-    elif frame.shape[2] == 4:  # RGBA -> BGR
+    elif frame.shape[2] == 4:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     img = cv2.resize(frame, IMG_SIZE)
     img = img.astype("float32")
@@ -87,7 +89,6 @@ def classify_top2(frame):
     if frame is None or frame.size == 0:
         st.warning("⚠️ Kein gültiges Bild erkannt.")
         return [("Kein Bild", 0.0)]
-
     try:
         preds = model.predict(preprocess_frame(frame), verbose=0)[0]
         top = preds.argsort()[-2:][::-1]
@@ -111,7 +112,7 @@ elif modus == "Datei-Upload":
         file_bytes = np.asarray(bytearray(upload.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
 
-# === Hauptanzeige ===
+# === Ausgabe ===
 if frame is not None:
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     st.image(rgb, caption="Aufgenommenes Bild", use_column_width=True)
@@ -127,7 +128,6 @@ if frame is not None:
         out_path = f"bilder/{ts}.jpg"
         cv2.imwrite(out_path, frame)
         st.success(f"Gespeichert als {out_path}")
-
 else:
     st.warning("Bitte ein Bild aufnehmen oder hochladen.")
 
