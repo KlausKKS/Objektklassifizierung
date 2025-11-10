@@ -55,7 +55,6 @@ def load_resources():
 # Ressourcen laden
 model, LABELS, RULES, MODEL_TYPE = load_resources()
 st.sidebar.success(f"✅ Modell geladen: {MODEL_TYPE}")
-st.sidebar.info(f"📐 Eingabeform: {model.input_shape}")
 
 # === Vorverarbeitung ===
 def preprocess_frame(frame):
