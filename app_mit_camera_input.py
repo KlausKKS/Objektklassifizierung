@@ -23,7 +23,17 @@ IMG_SIZE = (224, 224)
 # === Modell & Daten laden ===
 @st.cache_resource
 def load_resources():
-    # Versuche Large- oder Small-Variante
+    from tensorflow.keras.models import load_model
+    from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Small
+
+    # Sicherstellen, dass MODEL_PATH existiert
+    if not os.path.exists(MODEL_PATH):
+        st.error(f"❌ Modell-Datei nicht gefunden: {MODEL_PATH}")
+        st.stop()
+
+    model = None
+    model_type = "Unbekannt"
+
     try:
         model = load_model(
             MODEL_PATH,
@@ -31,8 +41,7 @@ def load_resources():
             custom_objects={"Functional": MobileNetV3Large}
         )
         model_type = "MobileNetV3Large"
-    except Exception as e1:
-        st.warning("⚠️ MobileNetV3Large nicht erkannt – versuche Small...")
+    except Exception:
         try:
             model = load_model(
                 MODEL_PATH,
@@ -40,18 +49,22 @@ def load_resources():
                 custom_objects={"Functional": MobileNetV3Small}
             )
             model_type = "MobileNetV3Small"
-        except Exception as e2:
-            st.error("❌ Modell konnte nicht geladen werden.")
+        except Exception as e:
+            st.error(f"❌ Modell konnte nicht geladen werden: {e}")
             st.stop()
 
-    # CSV-Dateien laden
+    # Prüfen, ob wirklich ein Modell geladen wurde
+    if not hasattr(model, "predict"):
+        st.error("❌ Fehler: Modell besitzt keine 'predict'-Methode.")
+        st.stop()
+
+    # Labels und Regeln
     df_labels = pd.read_csv(CLASSES_CSV, sep=";")
     df_rules = pd.read_csv(RULES_CSV, sep=";")
     labels = dict(zip(df_labels["label_id"].astype(int), df_labels["class_name"]))
     rules = {r["klasse"]: r for _, r in df_rules.iterrows()}
 
     return model, labels, rules, model_type
-
 # Ressourcen laden
 model, LABELS, RULES, MODEL_TYPE = load_resources()
 st.sidebar.success(f"✅ Modell geladen: {MODEL_TYPE}")
