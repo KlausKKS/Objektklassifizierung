@@ -11,7 +11,7 @@ from tensorflow.keras.applications import MobileNetV3Large, MobileNetV3Small
 # === Streamlit Setup ===
 st.set_page_config(page_title="Objekterkennung Desmids", layout="wide")
 st.title("🔬 Objekterkennung & Klassifikation")
-st.caption("MobileNetV3 – Top-2 Ergebnisse mit Kamera oder Datei-Upload")
+st.caption("MobileNetV3 – Top-2-Ergebnisse mit Kamera oder Datei-Upload")
 
 # === Pfade ===
 MODEL_PATH = "mobilenet_model_v3_fixed.keras"
@@ -22,13 +22,7 @@ IMG_SIZE = (224, 224)
 # === Modell & Daten laden ===
 @st.cache_resource
 def load_resources():
-    if not os.path.exists(MODEL_PATH):
-        st.error(f"❌ Modell-Datei nicht gefunden: {MODEL_PATH}")
-        st.stop()
-
-    model = None
-    model_type = "Unbekannt"
-
+    # Versuche Large- oder Small-Variante
     try:
         model = load_model(
             MODEL_PATH,
@@ -46,13 +40,10 @@ def load_resources():
             )
             model_type = "MobileNetV3Small"
         except Exception as e2:
-            st.error(f"❌ Modell konnte nicht geladen werden: {e2}")
+            st.error("❌ Modell konnte nicht geladen werden.")
             st.stop()
 
-    if not hasattr(model, "predict"):
-        st.error("❌ Fehler: Modell besitzt keine 'predict'-Methode.")
-        st.stop()
-
+    # CSV-Dateien laden
     df_labels = pd.read_csv(CLASSES_CSV, sep=";")
     df_rules = pd.read_csv(RULES_CSV, sep=";")
     labels = dict(zip(df_labels["label_id"].astype(int), df_labels["class_name"]))
@@ -60,37 +51,18 @@ def load_resources():
 
     return model, labels, rules, model_type
 
+# Ressourcen laden
 model, LABELS, RULES, MODEL_TYPE = load_resources()
 st.sidebar.success(f"✅ Modell geladen: {MODEL_TYPE}")
-try:
-    st.sidebar.info(f"📐 Eingabeform: {model.input_shape}")
-except Exception:
-    try:
-        st.sidebar.info(f"📐 Eingabeform: {model.inputs[0].shape}")
-    except Exception:
-        st.sidebar.info("📐 Eingabeform konnte nicht ermittelt werden.")
-
-# === Debug-Block ===
-st.sidebar.markdown("### 🧪 Modell-Debugging")
-st.sidebar.write(f"Modellpfad: {MODEL_PATH}")
-st.sidebar.write(f"Modelltyp laut Rückgabe: {MODEL_TYPE}")
-st.sidebar.write(f"Typ des geladenen Objekts: {type(model)}")
-st.sidebar.write(f"Hat `predict`-Methode? {hasattr(model, 'predict')}")
-if hasattr(model, 'predict'):
-    try:
-        dummy = np.zeros((1, IMG_SIZE[0], IMG_SIZE[1], 3), dtype=np.float32)
-        _ = model.predict(dummy)
-        st.sidebar.write("✔️ Dummy-Vorhersage erfolgreich")
-    except Exception as _e:
-        st.sidebar.error(f"❌ Dummy-Vorhersage fehlgeschlagen: {_e}")
+st.sidebar.info(f"📐 Eingabeform: {model.input_shape}")
 
 # === Vorverarbeitung ===
 def preprocess_frame(frame):
     if frame is None:
-        raise ValueError("Frame is None")
-    if len(frame.shape) == 2:
+        raise ValueError("Frame ist None")
+    if len(frame.shape) == 2:  # Graustufen
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
-    elif frame.shape[2] == 4:
+    elif frame.shape[2] == 4:  # RGBA -> BGR
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     img = cv2.resize(frame, IMG_SIZE)
     img = img.astype("float32")
@@ -102,6 +74,7 @@ def classify_top2(frame):
     if frame is None or frame.size == 0:
         st.warning("⚠️ Kein gültiges Bild erkannt.")
         return [("Kein Bild", 0.0)]
+
     try:
         preds = model.predict(preprocess_frame(frame), verbose=0)[0]
         top = preds.argsort()[-2:][::-1]
@@ -116,16 +89,16 @@ frame = None
 
 if modus == "Kamera":
     cam_data = st.camera_input("Foto aufnehmen")
-    if cam_data is not None:
+    if cam_data:
         file_bytes = np.asarray(bytearray(cam_data.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
 elif modus == "Datei-Upload":
     upload = st.file_uploader("Bild hochladen", type=["jpg", "jpeg", "png"])
-    if upload is not None:
+    if upload:
         file_bytes = np.asarray(bytearray(upload.read()), dtype=np.uint8)
         frame = cv2.imdecode(file_bytes, 1)
 
-# === Ausgabe ===
+# === Hauptanzeige ===
 if frame is not None:
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     st.image(rgb, caption="Aufgenommenes Bild", use_column_width=True)
@@ -141,6 +114,7 @@ if frame is not None:
         out_path = f"bilder/{ts}.jpg"
         cv2.imwrite(out_path, frame)
         st.success(f"Gespeichert als {out_path}")
+
 else:
     st.warning("Bitte ein Bild aufnehmen oder hochladen.")
 
